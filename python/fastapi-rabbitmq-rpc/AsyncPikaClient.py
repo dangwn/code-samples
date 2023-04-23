@@ -15,11 +15,10 @@ from typing import Any, Coroutine, Optional, Dict
 AsyncFunction = Coroutine[Any, Any, Any]
 ConsumerFunction = Coroutine[Any, Any, ConsumerTag]
 
-async def boilderplate_consumer(message: IncomingMessage):
+async def boilderplate_consumer(message: IncomingMessage) -> None:
     await message.ack()
     body: str = json.loads(message.body.decode())
     print(body)
-    return body
 
 class ClientNotInitializedException(Exception):
     pass
@@ -62,10 +61,9 @@ class AsyncPikaClient:
         return self
 
     async def shutdown(self) -> None:
-        if not (self.connection and self.channel):
-            return
-        await self.channel.close()
-        await self.connection.close()
+        if (self.connection):
+            await self.channel.close()
+            await self.connection.close()
 
     async def send_message(self, msg: str) -> Dict[str,str]:
         if not (self.channel):
@@ -78,7 +76,7 @@ class AsyncPikaClient:
         )
         return {'status':'success'}
     
-    async def consume_messages(self):
+    async def consume_messages(self) -> None:
         if not self.queue:
             raise ClientNotInitializedException('Queue not initialized')
         

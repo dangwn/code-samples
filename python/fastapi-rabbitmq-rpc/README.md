@@ -8,7 +8,7 @@ if config.CONSUMER_MANUAL_CONSUME == True:
 if config.CONSUMER_MANUAL_CONSUMER == False:
     Consumer polls queue for new messages and consumes immediately
 ```
-A boilerplate consume callback is supplied which simply prints the message. Both the producer and consumer keep their connections with RabbitMQ open, until app shutdown.
+A boilerplate consume callback is supplied which simply prints the message. Both the producer and consumer keep their connections with RabbitMQ open, until app shutdown. Messages in this example are sent via the default exchange.
 
 To run RabbitMQ locally with docker, follow these instructions:
 ```
