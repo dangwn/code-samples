@@ -1,0 +1,11 @@
+import os
+
+CONSUMER_API_HOST: str = os.getenv('CONSUMER_API_HOST', '0.0.0.0')
+CONSUMER_API_PORT: int = int(os.getenv('CONSUMER_API_PORT', 8001))
+CONSUMER_MANUAL_CONSUME: bool = False
+
+PRODUCER_API_HOST: str = os.getenv('PRODUCER_API_HOST', '0.0.0.0')
+PRODUCER_API_PORT: int = int(os.getenv('PRODUCER_API_PORT', 8002))
+
+RABBITMQ_CONNECTION_STRING: str = os.getenv('RABBITMQ_CONNECTION_STRING', 'http://localhost:5672')
+RABBITMQ_QUEUE_NAME: str = os.getenv('RABBITMQ_QUEUE_NAME', 'bbq')
