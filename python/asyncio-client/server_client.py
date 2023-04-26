@@ -2,13 +2,14 @@ import asyncio
 import logging
 import signal
 
+from parse_request import parse_raw_request, RequestDict
+from callback import run_callbacks
+
 from typing import (
-    Callable, 
-    Coroutine, 
+    Callable,
     List,
     Optional, 
-    Tuple, 
-    Union
+    Tuple
 )
 from types import FrameType
 from custom_types import (
@@ -28,17 +29,6 @@ logging.basicConfig(
     datefmt='%H:%M:%S'
 )
 clientLogger: logging.Logger = logging.getLogger('AsyncClient')
-
-
-def is_async(func: Union[Callable, Coroutine]) -> bool:
-    return asyncio.iscoroutinefunction(func)
-
-async def run_callback(callback: Callback) -> None:
-    if is_async(callback):
-        await callback()
-    else:
-        callback()
-
 
 class AsyncClient:
     def __init__(
@@ -80,20 +70,17 @@ class AsyncClient:
             chunk: bytes = await reader.read(1024)
             request += chunk
 
-        headers: str = ''
-        headers, _, _ = request.decode().partition('\r\n')
-
-        header_path: str = headers[:headers.index(' HTTP')]
-        response: str =''
+        request_dict: RequestDict = parse_raw_request(request)
+        response: str = ''
         response_code: str = ''
-        if header_path == 'GET /':
+        if request_dict['method'] == 'GET' and request_dict['path'] == '/':
             response_code = '200 OK'
             response = f'HTTP/1.1 {response_code}\r\nContent-Type: text/plain\r\n\r\nHealthy'
         else:
             response_code = '404 Not Found'
-            response = 'HTTP/1.1 {response_code}\r\nContent-Type: text/plain\r\n\r\n404 Not Found'
+            response = f'HTTP/1.1 {response_code}\r\nContent-Type: text/plain\r\n\r\n404 Not Found'
 
-        logging.info(f'{header_path} {response_code}')
+        logging.info(f'{request_dict["method"]} {request_dict["path"]} - {response_code}')
 
         writer.write(response.encode())
         await writer.drain()
@@ -111,8 +98,7 @@ class AsyncClient:
             return
 
         while not self.should_exit and not self.force_exit:
-            for cb in self.loop_callbacks:
-                await run_callback(cb)
+            await run_callbacks(self.loop_callbacks)
             await asyncio.sleep(0.1)
             
         if not self.force_exit:
@@ -127,16 +113,14 @@ class AsyncClient:
         )
         await self.server.start_serving()
 
-        for cb in self.startup_callbacks:
-            await run_callback(cb)
+        await run_callbacks(self.startup_callbacks)
 
         clientLogger.info('Server started successfully!')
 
     async def shutdown(self) -> None:
         clientLogger.info('Shutting down server...')
         
-        for cb in self.shutdown_callbacks:
-            await run_callback(cb)
+        await run_callbacks(self.shutdown_callbacks)
         
         if self.server_is_initialized:
             server_loop = self.server.get_loop()
@@ -188,7 +172,7 @@ class AsyncClient:
         return decorator
 
 if __name__ == '__main__':
-    app = AsyncClient(host='localhost', port = 9000)
+    app = AsyncClient(host='localhost')
 
     @app.on_event('startup')
     def cb1() -> None:
